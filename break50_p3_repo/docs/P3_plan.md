@@ -107,7 +107,7 @@ Verification Methods: How will you ensure your visualization accurately represen
 
 The Visualization: Embed your visualization here (as an image) or provide a link to the file.
 
-![Break 50 correlation](break50_attention_correlation.png)
+break50_p3_repo/outputs/figures/attention_coefficients.png
 
 
 Brief Interpretation (2-3 sentences): What does this visualization show? What pattern or insight does it reveal?
