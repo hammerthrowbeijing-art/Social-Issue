@@ -1,0 +1,64 @@
+{
+  "data_path": "C:\\Users\\Larry.Nie\\Downloads\\B50_X_COMMENT.xlsx",
+  "n_comments": 1008,
+  "date_start": "2024-07-23 02:02:13",
+  "date_end": "2024-08-01 02:43:46",
+  "strongest_spearman_outcome": "followers",
+  "model_summary": [
+    {
+      "outcome": "Retweets count (log1p exploratory model)",
+      "attention_coef": 0.011635313564460681,
+      "robust_se": 0.012536045999081155,
+      "ci_low": -0.012935336593738384,
+      "ci_high": 0.036205963722659745,
+      "p_value": 0.35333049168565306,
+      "sig": "",
+      "r2": 0.025096322883831346,
+      "n": 1008
+    },
+    {
+      "outcome": "Likes (log1p)",
+      "attention_coef": 0.13391487635258414,
+      "robust_se": 0.041536175487938636,
+      "ci_low": 0.052503972396224424,
+      "ci_high": 0.21532578030894386,
+      "p_value": 0.001263895253423284,
+      "sig": "**",
+      "r2": 0.08171190036870479,
+      "n": 1008
+    },
+    {
+      "outcome": "Comment word length",
+      "attention_coef": -0.625696003691381,
+      "robust_se": 0.29876449399852595,
+      "ci_low": -1.2112744119284917,
+      "ci_high": -0.04011759545427018,
+      "p_value": 0.03623519411828472,
+      "sig": "*",
+      "r2": 0.09558923879334802,
+      "n": 1008
+    },
+    {
+      "outcome": "Comment views (log1p)",
+      "attention_coef": 0.23143985419678614,
+      "robust_se": 0.06261718422598088,
+      "ci_low": 0.10871017311386362,
+      "ci_high": 0.3541695352797087,
+      "p_value": 0.00021893016420128323,
+      "sig": "***",
+      "r2": 0.11468505083785185,
+      "n": 1008
+    },
+    {
+      "outcome": "Followers (log1p)",
+      "attention_coef": 0.4517669920355125,
+      "robust_se": 0.032458086853918044,
+      "ci_low": 0.38814914180183313,
+      "ci_high": 0.5153848422691919,
+      "p_value": 4.892479655682663e-44,
+      "sig": "***",
+      "r2": 0.601170721250482,
+      "n": 1008
+    }
+  ]
+}
