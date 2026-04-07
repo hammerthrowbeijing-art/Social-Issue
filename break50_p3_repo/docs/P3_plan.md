@@ -107,7 +107,7 @@ Verification Methods: How will you ensure your visualization accurately represen
 
 The Visualization: Embed your visualization here (as an image) or provide a link to the file.
 
-break50_p3_repo/outputs/figures/attention_coefficients.png
+<img width="2068" height="1276" alt="图片" src="https://github.com/user-attachments/assets/90a3dd43-055c-470d-9087-8baa13d67539" />
 
 
 Brief Interpretation (2-3 sentences): What does this visualization show? What pattern or insight does it reveal?
