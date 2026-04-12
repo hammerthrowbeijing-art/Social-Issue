@@ -2,39 +2,33 @@
 
 ## Title
 
-**Author Attention Quantity and Comment-Level Outcomes in the Break 50 X Discussion**
+**Contested Discourse in the Break 50 Comment Field: Stance, Framing, and Visible Reaction**
 
 ## Abstract
 
-This report examines whether **author's attention quantity** is associated with five comment-level outcomes in the Break 50 X/Twitter discussion dataset: `retweets count`, `likes`, `Comment word length`, `Comment views`, and `followers`. Using a dataset of **1,008 public comments** collected between **July 23, 2024** and **August 1, 2024**, the analysis combines descriptive statistics, bivariate correlations, quartile comparisons, and controlled regression models. The results show that author's attention quantity is most strongly related to `followers`, and is also positively associated with `Comment views` and `likes`. By contrast, its relationship with `retweets count` is weak and statistically unstable, while its relationship with `Comment word length` is modestly negative. Overall, the findings suggest that author's attention quantity is more closely linked to visibility and audience reach than to longer textual expression or redistribution through retweets.
+This report examines the Break 50 X/Twitter comment field as a case of contested sport-political discourse rather than as a generic engagement dataset. The core question is how commenters frame Donald Trump's appearance in Break 50, how stance positions are distributed across the discussion, and which discourse positions receive more visible reaction. Using 1,008 public comments collected between July 23, 2024 and August 1, 2024, the analysis applies a transparent lexical coding strategy to classify stance, frame, moral condemnation, and depoliticizing appeals. The findings show that the discussion is strongly politicized: 50.0% of comments are coded as political and another 25.6% as blended sport-politics. The largest stance category is Trump-referential but unresolved, while explicitly supportive comments outnumber explicitly oppositional ones. Visible reaction does not cluster evenly across categories. Sport-centered comments receive the highest median views, explicitly supportive comments receive somewhat stronger median likes than explicitly oppositional comments, and depoliticizing appeals are rare. Overall, the Break 50 comments are best understood as a politically saturated and unevenly negotiated discourse space in which sport and politics are repeatedly made to overlap.
 
 ## 1. Introduction
 
-Digital platform discussions do not distribute visibility equally. Some users receive more exposure, endorsement, and reach than others, even when they participate in the same event-centered conversation. In the Break 50 discussion on X/Twitter, this raises an important question: does an author's own attention profile help explain how their comments perform?
+The Break 50 dataset becomes analytically important because it captures more than fan reaction to a golf video. Donald Trump's appearance on a Bryson DeChambeau golf show turns the event into a politically charged media moment. In that setting, the comment section becomes a place where users do not simply react to the content; they negotiate the legitimacy of the guest, the meaning of the appearance, the relation between sport and politics, and the acceptability of other users' reactions.
 
-This project focuses on **author's attention quantity** as the main independent variable and asks whether it is related to several indicators of comment performance and author position. The dependent variables are:
+This matters for P3 because the assignment is not just about correlation or platform metrics. It is about contested discourse. A study that only asks whether author metadata predicts likes or views misses the central feature of the case: the comment field contains disagreement, moral framing, depoliticizing appeals, and boundary-policing around who belongs in a sports-media space and under what terms.
 
-- `retweets count`
-- `likes`
-- `Comment word length`
-- `Comment views`
-- `followers`
+The revised project therefore treats the comments themselves as the object of analysis. The key question is not only which comments get seen, but what kinds of political and sport meanings are being produced.
 
-Together, these variables capture different dimensions of social media engagement. Retweets indicate redistribution, likes indicate endorsement, comment views indicate visibility, word length reflects textual expression, and followers represent a broader audience position associated with the commenting author.
+## 2. Research Questions
 
-The broader significance of this question is theoretical as well as practical. Theoretically, it contributes to discussions of platform attention, digital influence, and stratified visibility. Practically, it helps explain how public conversation around a sports-media project like Break 50 may become shaped by structural author-level advantages rather than by comment content alone.
+This report addresses three linked questions:
 
-## 2. Research Question
+1. How is Trump's appearance in Break 50 framed in the comments: as politics, as sport, or as a blend of both?
+2. How are stance positions distributed across the comment field, especially supportive, oppositional, depoliticizing, ambiguous, and sport-centered comments?
+3. Do visible reaction metrics such as likes and comment views cluster differently across those discourse positions?
 
-The central research question is:
-
-**How is author's attention quantity related to comment-level outcomes in the Break 50 dataset, specifically retweets count, likes, comment word length, comment views, and followers?**
-
-Based on the project plan, the expectation is that higher author's attention quantity should be associated more strongly with visibility-oriented outcomes such as views, likes, and followers than with textual characteristics such as comment length.
+In this revised framing, **author's attention quantity** is retained as a secondary control variable rather than the main theoretical focus.
 
 ## 3. Data
 
-The analysis uses only one local dataset: `B50_X_COMMENT.xlsx`. In accordance with course policy, the raw Excel file is kept outside the public repository.
+The analysis uses one local dataset, `B50_X_COMMENT.xlsx`, which is kept outside the public repository in accordance with course policy.
 
 ### Sample Characteristics
 
@@ -43,176 +37,176 @@ The analysis uses only one local dataset: `B50_X_COMMENT.xlsx`. In accordance wi
 - Unique comment IDs: **845**
 - Source posts: **4**
 - Date range: **2024-07-23 02:02:13** to **2024-08-01 02:43:46**
-- English-language comments: **920** (`91.3%`)
+- English-language comments: **920**
 - Verified accounts: **833**
-- Comments with zero retweets: **908** (`90.1%`)
+- Comments with zero retweets: **908**
+- Comments mentioning Trump-related terms under the coding rules: **770**
+- Comments with explicit moral-condemnation language: **30**
+- Comments with depoliticizing appeals: **9**
 
-These features matter for interpretation. The sample is highly skewed, especially for `retweets count`, `likes`, `Comment views`, and `followers`. The large share of zero-retweet comments means redistribution is relatively rare in this dataset, which makes retweets harder to model reliably with simple linear methods.
+These basic counts already suggest a strongly politicized discussion. Trump-related reference appears in most of the dataset, while comments explicitly asking for politics to be suspended are comparatively rare.
 
-## 4. Variable Definitions
+## 4. Method
 
-### Independent Variable
+## 4.1 Coding Strategy
 
-- `Author's attention quantity`
-  - Treated as the focal predictor.
-  - Used both in raw form for descriptive work and in `log(1 + x)` form for regression models because of strong right-skew.
+Because the dataset does not include pre-coded discourse variables, the analysis uses a transparent lexical coding scheme documented in [codebook.md](./codebook.md).
 
-### Dependent Variables
+### Stance categories
 
-- `retweets count`
-  - Proxy for comment redistribution.
+- `pro-Trump/supportive`
+- `anti-Trump/oppositional`
+- `depoliticizing/bridge`
+- `Trump-referential/unclear`
+- `sport-centered`
+- `other/unclear`
+
+### Frame categories
+
+- `political`
+- `blended sport-politics`
+- `sport`
+- `depoliticizing bridge`
+- `other`
+
+Two additional indicators were also coded:
+
+- `moral_condemnation`
+- `depoliticizing_appeal`
+
+The purpose of this coding is to create a first-pass map of conflict, ambiguity, and bridge language in the Break 50 comments. It is exploratory and should not be treated as a substitute for full manual coding.
+
+## 4.2 Reaction Measures
+
+To examine which discourse positions receive more visible reinforcement, the report uses:
+
 - `likes`
-  - Proxy for endorsement or appreciation.
-- `Comment word length`
-  - Proxy for how short or elaborate a comment is.
 - `Comment views`
-  - Proxy for exposure and visibility.
-- `followers`
-  - Proxy for the commenting author's broader audience reach.
+- `retweets count` as a secondary descriptive measure
 
-### Control Variables
+Unlike the earlier version of the project, these are not treated as interchangeable outcomes. Instead, they are used selectively to ask whether certain stance positions are more visible or more endorsed.
 
-To reduce confounding, the controlled models include:
+## 4.3 Controlled Checks
 
-- `blue_verified`
-- English-language indicator
-- `number of media outlets`
-- `number of author posts`
+The analysis also preserves a limited version of the earlier author-side modeling by using `author's attention quantity` as a control variable in exploratory models predicting log-likes and log-views. This allows the report to distinguish discourse-position patterns from simple account-level attention advantages.
 
-The two count-like controls are log-transformed before modeling.
+## 5. Results
 
-## 5. Method
+## 5.1 Frame Distribution
 
-The analysis proceeds in four steps.
+The frame results show that the comment field is not primarily organized as neutral sport talk.
 
-### Step 1. Descriptive Statistics
-
-Summary statistics were calculated to understand variable distributions, medians, and extreme values.
-
-### Step 2. Bivariate Correlations
-
-Pearson and Spearman correlations were estimated between author's attention quantity and each dependent variable. Spearman correlations are especially useful here because the data are skewed and not well represented by normal assumptions.
-
-### Step 3. Controlled Regression Models
-
-Separate OLS models were estimated for:
-
-- `log(1 + retweets count)` as an exploratory approximation
-- `log(1 + likes)`
-- `Comment word length`
-- `log(1 + Comment views)`
-- `log(1 + followers)`
-
-Each model includes `log(1 + author's attention quantity)` as the key predictor, along with the control variables listed above. Robust standard errors were used in the implementation.
-
-### Step 4. Quartile Comparison
-
-To improve interpretability, the sample was split into four quartiles based on author's attention quantity. Outcome patterns were then compared across these quartiles.
-
-## 6. Results
-
-## 6.1 Descriptive Patterns
-
-The descriptive statistics show strong skew across nearly all of the main engagement variables.
-
-- Median `retweets count` is **0**
-- Median `likes` is **1**
-- Median `Comment word length` is **10**
-- Median `Comment views` is **290**
-- Median `followers` is **756**
-- Median `Author's attention quantity` is **605**
-
-This confirms that a small number of high-visibility observations account for a large share of the distribution, especially for views and followers.
-
-## 6.2 Bivariate Associations
-
-The rank-order correlations show that author's attention quantity is not equally related to all outcomes.
-
-| Dependent variable | Spearman rho | Pearson r |
+| Frame | Comments | Share |
 | --- | --- | --- |
-| retweets count | 0.085 | 0.037 |
-| likes | 0.171 | 0.083 |
-| Comment word length | -0.084 | 0.080 |
-| Comment views | 0.234 | 0.082 |
-| followers | 0.675 | 0.177 |
+| political | 504 | 0.500 |
+| blended sport-politics | 258 | 0.256 |
+| sport | 41 | 0.041 |
+| depoliticizing bridge | 9 | 0.009 |
+| other | 196 | 0.194 |
 
-Two findings stand out. First, the strongest relationship by far is with `followers` (`rho = 0.675`). Second, `Comment views` and `likes` are positively related to author's attention quantity, but much less strongly. `Comment word length` is weakly negative, suggesting that higher attention quantity does not correspond to longer comments.
+These counts show that fully half of the comments frame the event politically, while another quarter combine political and golf language. Only a small minority are coded as purely sport-centered. This means that Trump's appearance is being processed by the audience as a political event as much as, or more than, a golf-media event.
 
-![Correlation figure](../outputs/figures/attention_correlations.png)
+![Frame distribution](../outputs/figures/frame_distribution.png)
 
-## 6.3 Controlled Model Results
+## 5.2 Stance Distribution
 
-The controlled models provide a clearer picture of the independent association between author's attention quantity and each outcome after adjusting for verification status, language, media outlets, and total author posts.
+The stance distribution adds more nuance. The largest category is not explicit support or opposition, but a broad middle zone of politically charged reference without a sharply coded resolution.
 
-| Outcome | Coefficient for log(attention) | Robust SE | 95% CI | p-value | R^2 |
+| Stance | Comments | Share |
+| --- | --- | --- |
+| Trump-referential/unclear | 623 | 0.618 |
+| pro-Trump/supportive | 108 | 0.107 |
+| anti-Trump/oppositional | 30 | 0.030 |
+| depoliticizing/bridge | 9 | 0.009 |
+| sport-centered | 41 | 0.041 |
+| other/unclear | 197 | 0.195 |
+
+Three points stand out.
+
+1. Explicitly supportive comments outnumber explicitly oppositional comments by more than three to one.
+2. Depoliticizing appeals are rare.
+3. The dominant category is the Trump-referential middle, which suggests that the comment field is heavily politicized even when users are not always clearly taking sides in a way the heuristic code can sharply classify.
+
+![Stance distribution](../outputs/figures/stance_distribution.png)
+
+## 5.3 Visible Reaction By Stance
+
+The engagement comparison shows that reaction patterns differ across discourse positions.
+
+| Stance | Comments | Median likes | Median views | Retweet rate | Median attention quantity |
 | --- | --- | --- | --- | --- | --- |
-| Retweets count (log1p exploratory model) | 0.012 | 0.013 | [-0.013, 0.036] | 0.353 | 0.025 |
-| Likes (log1p) | 0.134 | 0.042 | [0.053, 0.215] | 0.001 | 0.082 |
-| Comment word length | -0.626 | 0.299 | [-1.211, -0.040] | 0.036 | 0.096 |
-| Comment views (log1p) | 0.231 | 0.063 | [0.109, 0.354] | <0.001 | 0.115 |
-| Followers (log1p) | 0.452 | 0.032 | [0.388, 0.515] | <0.001 | 0.601 |
+| Trump-referential/unclear | 623 | 1.0 | 210.0 | 0.098 | 606.0 |
+| pro-Trump/supportive | 108 | 2.0 | 234.0 | 0.111 | 565.0 |
+| anti-Trump/oppositional | 30 | 1.0 | 82.0 | 0.200 | 346.0 |
+| depoliticizing/bridge | 9 | 1.0 | 90.0 | 0.222 | 597.0 |
+| sport-centered | 41 | 2.0 | 915.0 | 0.122 | 641.0 |
+| other/unclear | 197 | 2.0 | 638.0 | 0.071 | 694.0 |
 
-These results suggest five substantive conclusions:
+The clearest pattern is that `sport-centered` comments receive the highest median views. This suggests that comments focused on golf performance, rather than direct political argument, can travel especially widely in the visible conversation. Explicitly supportive comments have somewhat stronger median likes than explicitly oppositional comments. Anti-Trump comments remain present, but their median visibility is much lower.
 
-1. `Followers` is the outcome most strongly associated with author's attention quantity.
-2. `Comment views` also increase as author's attention quantity increases, even after controls.
-3. `Likes` show a positive and statistically significant relationship with attention quantity.
-4. `Comment word length` is modestly negative, suggesting that higher-attention authors are not writing longer comments.
-5. `Retweets count` does not show a reliable association in this specification.
+![Engagement by stance](../outputs/figures/engagement_by_stance.png)
 
-The coefficient plot below visualizes these estimates and confidence intervals.
+## 5.4 High-Engagement Comment Composition
 
-![Coefficient figure](../outputs/figures/attention_coefficients.png)
+To see whether highly visible comments differ from the overall discussion, the analysis compares overall stance shares with the top decile of likes and the top decile of comment views.
 
-## 6.4 Quartile Comparison
+| Stance | Overall share | Top likes share | Top views share |
+| --- | --- | --- | --- |
+| Trump-referential/unclear | 0.618 | 0.642 | 0.624 |
+| pro-Trump/supportive | 0.107 | 0.123 | 0.089 |
+| anti-Trump/oppositional | 0.030 | 0.057 | 0.050 |
+| depoliticizing/bridge | 0.009 | 0.019 | 0.000 |
+| sport-centered | 0.041 | 0.066 | 0.079 |
+| other/unclear | 0.195 | 0.094 | 0.158 |
 
-The quartile comparison helps translate the model results into a more intuitive descriptive pattern.
+This comparison suggests that the most visible comments are still dominated by the same broad referential middle that dominates the conversation overall. However, the top-like decile contains somewhat larger shares of both supportive and oppositional comments than their overall baseline, which implies that explicit contestation is not numerically dominant but can still capture attention.
 
-| Attention quartile | Median attention | Retweet rate | Median likes | Median word length | Median views | Median followers |
-| --- | --- | --- | --- | --- | --- | --- |
-| Q1 Lowest | 160.5 | 0.079 | 1.0 | 11.0 | 140.5 | 235 |
-| Q2 | 425.0 | 0.095 | 2.0 | 10.0 | 233.0 | 441 |
-| Q3 | 897.0 | 0.071 | 2.0 | 8.5 | 448.0 | 894 |
-| Q4 Highest | 3771.5 | 0.151 | 2.0 | 9.5 | 654.0 | 3969 |
+![Top-decile stance shares](../outputs/figures/top_decile_stance_shares.png)
 
-The most striking pattern is that the highest-attention quartile has much larger median values for `Comment views` and `followers` than the lower quartiles. The retweet pattern is more erratic, which is consistent with the weaker and nonsignificant regression result.
+## 5.5 Controlled Checks
 
-![Quartile figure](../outputs/figures/attention_quartiles.png)
+The controlled models are not the centerpiece of the revised report, but they provide an important check. After controlling for verification status, language, number of media outlets, number of author posts, and `author's attention quantity`, the attention variable remains strongly associated with visible reaction:
 
-## 7. Discussion
+- For `log(1 + likes)`: `b = 0.137`, `p = 0.001`
+- For `log(1 + comment views)`: `b = 0.239`, `p < 0.001`
 
-The findings support the main claim of the project plan: **author's attention quantity is more closely tied to visibility and reach than to textual elaboration or sharing behavior**.
+By contrast, the explicit stance coefficients are less stable. This is especially true for `anti-Trump/oppositional` and `depoliticizing/bridge` comments, which are relatively rare in the sample. The controlled models therefore support a narrower conclusion: account-level attention still matters, but it does not replace the need to analyze the discourse categories themselves.
 
-This pattern is theoretically meaningful. It suggests that author-level attention may function less as a driver of richer textual participation and more as a structural signal of platform prominence. Authors with higher attention quantity appear to be embedded in positions that generate greater audience exposure and broader audience scale. In that sense, the results align with platform research arguing that visibility online is stratified and cumulative rather than evenly distributed.
+## 6. Discussion
 
-The weak retweet result is also important. It indicates that not every engagement metric responds in the same way to author attention quantity. Likes and views may be easier to accumulate under attention advantages, while retweeting may depend more heavily on other factors such as comment substance, political salience, identity cues, or network clustering.
+The main contribution of this revised analysis is conceptual. It moves the project into genuine P3 territory by treating the Break 50 comments as a field of **contested discourse** rather than as a set of comments waiting to be correlated with author metadata.
 
-The negative association with comment word length also adds nuance. Greater attention quantity does not imply that authors write more elaborate responses. If anything, higher-attention authors may be able to attract visibility without producing longer comments.
+Three broader conclusions follow.
 
-## 8. Limitations
+First, the discussion is deeply politicized. A majority of comments are coded as political or blended sport-politics, and only a very small minority are coded as depoliticizing bridge language. This means that Trump's appearance does not remain safely contained within a sports-only frame.
 
-Several limitations should be acknowledged.
+Second, explicit support is more common than explicit opposition in the coded data, but neither side fully dominates the discussion. Instead, the largest space is occupied by Trump-referential comments that keep politics active without always making stance completely explicit. That ambiguity is important: it suggests a discourse field structured less by perfectly separated camps than by overlapping layers of endorsement, condemnation, irony, and unresolved signaling.
 
-- The dataset covers only one Break 50 conversation window and only one platform.
-- The study is observational and cannot support causal claims.
-- `followers` is conceptually different from the other dependent variables because it reflects author-level audience position rather than a direct response to a single comment.
-- `retweets count` is highly zero-inflated, so the current log-transformed OLS treatment is only an approximation.
-- Some unmeasured features, such as the semantic content of the comment, tone, political references, or network placement, may influence the observed outcomes.
+Third, visible reaction does not map neatly onto the most openly partisan comments. The most-viewed median pattern belongs to sport-centered comments, while the top-engagement deciles still contain a large share of politically referential but unresolved comments. In other words, the most visible comments are not always the most ideologically explicit ones.
 
-## 9. Conclusion
+## 7. Limitations
 
-This project shows that author's attention quantity is meaningfully associated with several important outcomes in the Break 50 X discussion. The strongest link is with `followers`, followed by `Comment views` and `likes`. By contrast, retweets are not reliably predicted in the current model, and comment length is slightly lower among higher-attention authors.
+- The coding is heuristic and dictionary-based rather than manually validated by multiple coders.
+- Some comments are duplicated or highly formulaic, which may inflate certain categories.
+- The `Trump-referential/unclear` category is intentionally broad, so it captures ambiguity at the cost of precision.
+- The anti-Trump and depoliticizing categories are small, which reduces statistical stability.
+- The dataset covers one event, one platform, and a short time window, so the findings should not be generalized too far.
 
-Taken together, the evidence suggests that author's attention quantity is best understood as a marker of **platform visibility and audience reach** rather than of longer expression or stronger redistribution. For the Break 50 project, this means that comment performance is shaped not only by what is said, but also by the broader attention position of the person saying it.
+## 8. Conclusion
 
-## 10. Repository Notes
+The Break 50 comment field is best understood as a politically saturated discourse space in which golf and politics are repeatedly forced together. The dominant pattern is not simply support or opposition, but a large and noisy zone of politically referential commentary. Explicitly supportive comments are more common than explicitly oppositional ones, depoliticizing comments are rare, and the most visible comments are not always the most openly partisan.
 
-This report is designed for a public GitHub repository submission. The repository includes:
+This revised framing is closer to the purpose of P3 because it analyzes the comment field as a site where audiences negotiate the boundaries between sport, politics, legitimacy, and visibility. It keeps the useful infrastructure of the earlier repository, but redirects the analytic center toward the contested discourse that makes Break 50 worth studying.
 
-- the project plan
-- the analysis code
-- generated figures
-- markdown summary tables
-- this report
+## 9. Repository Notes
 
-The raw dataset is intentionally excluded from version control to comply with the course requirement.
+This repository now includes:
+
+- a revised P3 plan centered on contested discourse
+- a transparent discourse codebook
+- a reproducible analysis pipeline
+- updated figures and markdown tables
+- repo-ready analysis and final reports
+- a supplementary appendix preserving the earlier author-attention exploratory analysis
+
+The raw dataset remains intentionally excluded from version control.

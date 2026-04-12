@@ -9,3 +9,6 @@
 | English-language comments | 920 |
 | Verified accounts | 833 |
 | Comments with zero retweets | 908 |
+| Comments mentioning Trump-related terms | 770 |
+| Comments with moral-condemnation language | 30 |
+| Comments with depoliticizing appeals | 9 |

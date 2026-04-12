@@ -16,19 +16,116 @@ FIGURES_DIR = REPO_ROOT / "outputs" / "figures"
 TABLES_DIR = REPO_ROOT / "outputs" / "tables"
 DOCS_DIR = REPO_ROOT / "docs"
 
-IV = "Author's attention quantity"
-DV_COLUMNS = [
-    "retweets count",
-    "likes",
-    "Comment word length",
-    "Comment views",
-    "followers",
+ATTENTION_COL = "Author's attention quantity"
+REACTION_COLS = ["retweets count", "likes", "Comment views"]
+
+TRUMP_TERMS = ["trump", "president", "potus", "maga", "realdonaldtrump"]
+POSITIVE_STANCE_TERMS = [
+    "greatest",
+    "elite",
+    "legendary",
+    "epic",
+    "awesome",
+    "incredible",
+    "good golfer",
+    "incredible golfer",
+    "insane",
+    "insanely",
+    "national treasure",
+    "goat",
+    "goats",
+    "lfg",
+    "stripes the driver",
+    "has game",
+    "can play",
+    "flusher",
+    "best round",
+    "fun to watch",
 ]
-CONTROL_COLUMNS = [
-    "verified",
-    "english",
-    "log_media_outlets",
-    "log_author_posts",
+NEGATIVE_STANCE_TERMS = [
+    "felon",
+    "racist",
+    "rapist",
+    "pedo",
+    "simp",
+    "disgusted",
+    "cheat",
+    "cheats",
+    "adjudicated",
+    "convicted",
+    "asshole",
+    "clown",
+    "gtfooh",
+    "suckers and losers",
+    "dangerous",
+    "worst person",
+    "disappointed",
+    "staged his own assassination",
+    "sex offender",
+    "sexual assault",
+    "be better",
+    "boycott",
+    "polarizing person",
+    "alienating",
+]
+DEPOLITICIZING_TERMS = [
+    "no politics",
+    "politics out of it",
+    "love of golf",
+    "healing",
+    "play together",
+    "very little politicin",
+    "say what you want about politics",
+    "pleasant surprise",
+    "fun and lighthearted",
+    "lighthearted dialogue",
+]
+POLITICAL_FRAME_TERMS = [
+    "trump",
+    "president",
+    "potus",
+    "maga",
+    "politic",
+    "political",
+    "election",
+    "felon",
+    "racist",
+    "democrat",
+    "republican",
+    "america",
+    "45",
+]
+SPORT_FRAME_TERMS = [
+    "golf",
+    "bryson",
+    "break 50",
+    "driver",
+    "swing",
+    "course",
+    "round",
+    "putt",
+    "youtube",
+    "club",
+    "golfer",
+    "break 47",
+    "shot",
+    "hole",
+    "fairway",
+]
+STANCE_ORDER = [
+    "Trump-referential/unclear",
+    "pro-Trump/supportive",
+    "anti-Trump/oppositional",
+    "depoliticizing/bridge",
+    "sport-centered",
+    "other/unclear",
+]
+FRAME_ORDER = [
+    "political",
+    "blended sport-politics",
+    "sport",
+    "depoliticizing bridge",
+    "other",
 ]
 
 
@@ -40,10 +137,7 @@ def ensure_dirs() -> None:
 
 def resolve_data_path() -> Path:
     raw = os.environ.get("BREAK50_DATA_PATH")
-    if raw:
-        data_path = Path(raw)
-    else:
-        data_path = DEFAULT_DATA_PATH
+    data_path = Path(raw) if raw else DEFAULT_DATA_PATH
     if not data_path.exists():
         raise FileNotFoundError(
             "Could not find the local dataset. Set BREAK50_DATA_PATH to the path of B50_X_COMMENT.xlsx."
@@ -51,11 +145,55 @@ def resolve_data_path() -> Path:
     return data_path
 
 
+def count_hits(text: str, terms: list[str]) -> int:
+    return sum(term in text for term in terms)
+
+
+def has_any(text: str, terms: list[str]) -> bool:
+    return any(term in text for term in terms)
+
+
+def classify_comment(text: str) -> tuple[str, str, int, int]:
+    lower = text.lower()
+    pos_hits = count_hits(lower, POSITIVE_STANCE_TERMS)
+    neg_hits = count_hits(lower, NEGATIVE_STANCE_TERMS)
+    depol_hits = count_hits(lower, DEPOLITICIZING_TERMS)
+    has_trump = has_any(lower, TRUMP_TERMS)
+    has_political = has_any(lower, POLITICAL_FRAME_TERMS)
+    has_sport = has_any(lower, SPORT_FRAME_TERMS)
+
+    if neg_hits > 0 and neg_hits >= pos_hits:
+        stance = "anti-Trump/oppositional"
+    elif depol_hits > 0:
+        stance = "depoliticizing/bridge"
+    elif has_trump and pos_hits > 0:
+        stance = "pro-Trump/supportive"
+    elif has_trump:
+        stance = "Trump-referential/unclear"
+    elif has_sport:
+        stance = "sport-centered"
+    else:
+        stance = "other/unclear"
+
+    if depol_hits > 0:
+        frame = "depoliticizing bridge"
+    elif has_political and has_sport:
+        frame = "blended sport-politics"
+    elif has_political:
+        frame = "political"
+    elif has_sport:
+        frame = "sport"
+    else:
+        frame = "other"
+
+    return stance, frame, int(neg_hits > 0), int(depol_hits > 0)
+
+
 def load_and_prepare(data_path: Path) -> pd.DataFrame:
     df = pd.read_excel(data_path).copy()
 
     numeric_cols = [
-        IV,
+        ATTENTION_COL,
         "retweets count",
         "likes",
         "Comment word length",
@@ -72,20 +210,20 @@ def load_and_prepare(data_path: Path) -> pd.DataFrame:
     df["english"] = (df["Comment language"] == "en").astype(int)
     df["any_retweet"] = (df["retweets count"] > 0).astype(int)
     df["any_like"] = (df["likes"] > 0).astype(int)
-
-    df["log_attention"] = np.log1p(df[IV])
-    df["log_retweets"] = np.log1p(df["retweets count"])
+    df["log_attention"] = np.log1p(df[ATTENTION_COL])
     df["log_likes"] = np.log1p(df["likes"])
     df["log_views"] = np.log1p(df["Comment views"])
-    df["log_followers"] = np.log1p(df["followers"])
     df["log_media_outlets"] = np.log1p(df["number of media outlets"])
     df["log_author_posts"] = np.log1p(df["number of author posts"])
 
-    df["attention_quartile"] = pd.qcut(
-        df[IV].rank(method="first"),
-        4,
-        labels=["Q1 Lowest", "Q2", "Q3", "Q4 Highest"],
+    coded = df["contents"].fillna("").astype(str).apply(classify_comment)
+    df[["stance", "frame", "moral_condemnation", "depoliticizing_appeal"]] = pd.DataFrame(
+        coded.tolist(),
+        index=df.index,
     )
+
+    df["stance"] = pd.Categorical(df["stance"], categories=STANCE_ORDER, ordered=True)
+    df["frame"] = pd.Categorical(df["frame"], categories=FRAME_ORDER, ordered=True)
     return df
 
 
@@ -113,8 +251,7 @@ def df_to_markdown(df: pd.DataFrame, index: bool = True) -> str:
         "| " + " | ".join(["---"] * len(headers)) + " |",
     ]
     for _, row in table.iterrows():
-        values = [fmt_value(v) for v in row.tolist()]
-        lines.append("| " + " | ".join(values) + " |")
+        lines.append("| " + " | ".join(fmt_value(v) for v in row.tolist()) + " |")
     return "\n".join(lines)
 
 
@@ -129,7 +266,6 @@ def normal_p_value(z: float) -> float:
 def ols_hc1(y: np.ndarray, x: np.ndarray, names: list[str]) -> tuple[pd.DataFrame, dict[str, float]]:
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
-
     keep = np.isfinite(y) & np.all(np.isfinite(x), axis=1)
     x = x[keep]
     y = y[keep]
@@ -150,7 +286,6 @@ def ols_hc1(y: np.ndarray, x: np.ndarray, names: list[str]) -> tuple[pd.DataFram
     p_values = np.array([normal_p_value(z) for z in z_values])
     ci_low = beta - 1.96 * robust_se
     ci_high = beta + 1.96 * robust_se
-
     rss = float(np.sum(residuals**2))
     tss = float(np.sum((y - y.mean()) ** 2))
     r2 = 1 - rss / tss if tss else float("nan")
@@ -166,22 +301,11 @@ def ols_hc1(y: np.ndarray, x: np.ndarray, names: list[str]) -> tuple[pd.DataFram
             "ci_high": ci_high,
         }
     )
-    meta = {"n": float(n), "r2": float(r2)}
-    return results, meta
+    return results, {"n": float(n), "r2": float(r2)}
 
 
-def significance_label(p_value: float) -> str:
-    if p_value < 0.001:
-        return "***"
-    if p_value < 0.01:
-        return "**"
-    if p_value < 0.05:
-        return "*"
-    return ""
-
-
-def descriptive_outputs(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    sample_overview = pd.DataFrame(
+def sample_overview(df: pd.DataFrame) -> pd.DataFrame:
+    return pd.DataFrame(
         {
             "metric": [
                 "Comments",
@@ -193,6 +317,9 @@ def descriptive_outputs(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
                 "English-language comments",
                 "Verified accounts",
                 "Comments with zero retweets",
+                "Comments mentioning Trump-related terms",
+                "Comments with moral-condemnation language",
+                "Comments with depoliticizing appeals",
             ],
             "value": [
                 len(df),
@@ -204,35 +331,111 @@ def descriptive_outputs(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
                 int(df["english"].sum()),
                 int(df["verified"].sum()),
                 int((df["retweets count"] == 0).sum()),
+                int(df["stance"].isin(["Trump-referential/unclear", "pro-Trump/supportive", "anti-Trump/oppositional", "depoliticizing/bridge"]).sum()),
+                int(df["moral_condemnation"].sum()),
+                int(df["depoliticizing_appeal"].sum()),
             ],
         }
     )
 
-    stats_cols = [IV] + DV_COLUMNS + ["number of media outlets", "number of author posts"]
-    stats = (
-        df[stats_cols]
-        .agg(["count", "mean", "std", "min", "median", "max"])
-        .T.rename(columns={"std": "sd"})
-    )
-    return sample_overview, stats
+
+def descriptive_stats(df: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        ATTENTION_COL,
+        "retweets count",
+        "likes",
+        "Comment word length",
+        "Comment views",
+        "followers",
+        "number of media outlets",
+        "number of author posts",
+    ]
+    return df[cols].agg(["count", "mean", "std", "min", "median", "max"]).T.rename(columns={"std": "sd"})
 
 
-def correlation_output(df: pd.DataFrame) -> pd.DataFrame:
-    corr_cols = [IV] + DV_COLUMNS
-    spearman = df[corr_cols].corr(method="spearman").loc[IV, DV_COLUMNS]
-    pearson = df[corr_cols].corr(method="pearson").loc[IV, DV_COLUMNS]
-    correlation_table = pd.DataFrame(
+def stance_distribution(df: pd.DataFrame) -> pd.DataFrame:
+    counts = df["stance"].value_counts(dropna=False).reindex(STANCE_ORDER, fill_value=0)
+    return pd.DataFrame(
         {
-            "dependent_variable": DV_COLUMNS,
-            "spearman_rho": [spearman[col] for col in DV_COLUMNS],
-            "pearson_r": [pearson[col] for col in DV_COLUMNS],
+            "stance": counts.index,
+            "comments": counts.values,
+            "share": counts.values / len(df),
         }
     )
-    return correlation_table
 
 
-def regression_outputs(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    x_names = ["Intercept", "log_attention", "verified", "english", "log_media_outlets", "log_author_posts"]
+def frame_distribution(df: pd.DataFrame) -> pd.DataFrame:
+    counts = df["frame"].value_counts(dropna=False).reindex(FRAME_ORDER, fill_value=0)
+    return pd.DataFrame(
+        {
+            "frame": counts.index,
+            "comments": counts.values,
+            "share": counts.values / len(df),
+        }
+    )
+
+
+def engagement_by_stance(df: pd.DataFrame) -> pd.DataFrame:
+    grouped = df.groupby("stance", observed=False).agg(
+        comments=("stance", "size"),
+        likes_mean=("likes", "mean"),
+        likes_median=("likes", "median"),
+        views_mean=("Comment views", "mean"),
+        views_median=("Comment views", "median"),
+        retweet_rate=("any_retweet", "mean"),
+        attention_median=(ATTENTION_COL, "median"),
+    )
+    return grouped.reset_index()
+
+
+def engagement_by_frame(df: pd.DataFrame) -> pd.DataFrame:
+    grouped = df.groupby("frame", observed=False).agg(
+        comments=("frame", "size"),
+        likes_median=("likes", "median"),
+        views_median=("Comment views", "median"),
+        retweet_rate=("any_retweet", "mean"),
+    )
+    return grouped.reset_index()
+
+
+def top_decile_shares(df: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    overall = (df["stance"].value_counts(normalize=True).reindex(STANCE_ORDER, fill_value=0)).rename("overall")
+    likes_cutoff = df["likes"].quantile(0.9)
+    views_cutoff = df["Comment views"].quantile(0.9)
+    top_likes = df.loc[df["likes"] >= likes_cutoff, "stance"].value_counts(normalize=True).reindex(STANCE_ORDER, fill_value=0)
+    top_views = df.loc[df["Comment views"] >= views_cutoff, "stance"].value_counts(normalize=True).reindex(STANCE_ORDER, fill_value=0)
+    for stance in STANCE_ORDER:
+        rows.append(
+            {
+                "stance": stance,
+                "overall_share": overall[stance],
+                "top_likes_share": top_likes[stance],
+                "top_views_share": top_views[stance],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def discourse_model_summary(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    categories = [
+        "pro-Trump/supportive",
+        "anti-Trump/oppositional",
+        "depoliticizing/bridge",
+        "sport-centered",
+        "other/unclear",
+    ]
+    for category in categories:
+        df[f"stance::{category}"] = (df["stance"] == category).astype(int)
+
+    x_names = [
+        "Intercept",
+        "log_attention",
+        "verified",
+        "english",
+        "log_media_outlets",
+        "log_author_posts",
+    ] + categories
     x = np.column_stack(
         [
             np.ones(len(df)),
@@ -242,301 +445,300 @@ def regression_outputs(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
             df["log_media_outlets"],
             df["log_author_posts"],
         ]
+        + [df[f"stance::{category}"] for category in categories]
     )
 
-    outcome_map = {
-        "Retweets count (log1p exploratory model)": "log_retweets",
-        "Likes (log1p)": "log_likes",
-        "Comment word length": "Comment word length",
-        "Comment views (log1p)": "log_views",
-        "Followers (log1p)": "log_followers",
-    }
-
-    all_rows = []
+    outcomes = {"Likes (log1p)": "log_likes", "Comment views (log1p)": "log_views"}
+    detail_frames = []
     summary_rows = []
-    for label, column in outcome_map.items():
-        fit_df, meta = ols_hc1(df[column].to_numpy(), x, x_names)
-        fit_df.insert(0, "outcome", label)
-        all_rows.append(fit_df)
-
-        attention_row = fit_df.loc[fit_df["term"] == "log_attention"].iloc[0]
+    for label, outcome_col in outcomes.items():
+        detail_df, meta = ols_hc1(df[outcome_col].to_numpy(), x, x_names)
+        detail_df.insert(0, "outcome", label)
+        detail_frames.append(detail_df)
+        for category in categories:
+            row = detail_df.loc[detail_df["term"] == category].iloc[0]
+            summary_rows.append(
+                {
+                    "outcome": label,
+                    "comparison_to_reference": f"{category} vs Trump-referential/unclear",
+                    "coef": row["coef"],
+                    "robust_se": row["robust_se"],
+                    "ci_low": row["ci_low"],
+                    "ci_high": row["ci_high"],
+                    "p_value": row["p_value"],
+                    "r2": meta["r2"],
+                    "n": int(meta["n"]),
+                }
+            )
+        attention_row = detail_df.loc[detail_df["term"] == "log_attention"].iloc[0]
         summary_rows.append(
             {
                 "outcome": label,
-                "attention_coef": attention_row["coef"],
+                "comparison_to_reference": "log_attention control effect",
+                "coef": attention_row["coef"],
                 "robust_se": attention_row["robust_se"],
                 "ci_low": attention_row["ci_low"],
                 "ci_high": attention_row["ci_high"],
                 "p_value": attention_row["p_value"],
-                "sig": significance_label(attention_row["p_value"]),
                 "r2": meta["r2"],
                 "n": int(meta["n"]),
             }
         )
-
-    model_details = pd.concat(all_rows, ignore_index=True)
-    model_summary = pd.DataFrame(summary_rows)
-    return model_details, model_summary
+    return pd.concat(detail_frames, ignore_index=True), pd.DataFrame(summary_rows)
 
 
-def quartile_output(df: pd.DataFrame) -> pd.DataFrame:
-    grouped = df.groupby("attention_quartile", observed=False).agg(
-        attention_min=(IV, "min"),
-        attention_median=(IV, "median"),
-        attention_max=(IV, "max"),
-        retweet_rate=("any_retweet", "mean"),
-        mean_retweets=("retweets count", "mean"),
-        median_likes=("likes", "median"),
-        median_word_length=("Comment word length", "median"),
-        median_views=("Comment views", "median"),
-        median_followers=("followers", "median"),
-    )
-    return grouped.reset_index()
-
-
-def create_correlation_figure(correlation_table: pd.DataFrame) -> None:
-    ordered = correlation_table.sort_values("spearman_rho")
-    colors = ["#b85c38" if value < 0 else "#2f6f8f" for value in ordered["spearman_rho"]]
-
-    fig, ax = plt.subplots(figsize=(9.4, 5.6))
-    bars = ax.barh(ordered["dependent_variable"], ordered["spearman_rho"], color=colors, edgecolor="#222222")
-    ax.axvline(0, color="#444444", linewidth=1)
-    ax.set_xlabel("Spearman correlation with author's attention quantity")
-    ax.set_title("Break 50: Bivariate Associations with Author Attention Quantity")
+def create_stance_distribution_figure(table: pd.DataFrame) -> None:
+    fig, ax = plt.subplots(figsize=(9.2, 5.4))
+    bars = ax.barh(table["stance"], table["comments"], color="#2f6f8f", edgecolor="#1f2937")
+    ax.set_title("Break 50 Comment Stance Distribution")
+    ax.set_xlabel("Number of comments")
     ax.grid(axis="x", linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
-    for bar, value in zip(bars, ordered["spearman_rho"]):
-        x = bar.get_width()
-        ax.text(
-            x + (0.012 if x >= 0 else -0.012),
-            bar.get_y() + bar.get_height() / 2,
-            f"{value:.3f}",
-            va="center",
-            ha="left" if x >= 0 else "right",
-            fontsize=10,
-        )
-
+    for bar, value, share in zip(bars, table["comments"], table["share"]):
+        ax.text(value + 8, bar.get_y() + bar.get_height() / 2, f"{value} ({share:.1%})", va="center", fontsize=9)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "attention_correlations.png", dpi=220)
+    fig.savefig(FIGURES_DIR / "stance_distribution.png", dpi=220)
     plt.close(fig)
 
 
-def create_quartile_figure(quartile_table: pd.DataFrame) -> None:
-    labels = quartile_table["attention_quartile"].tolist()
-    x = np.arange(len(labels))
-
-    series = [
-        ("retweet_rate", "Retweet rate", "#2f6f8f"),
-        ("median_likes", "Median likes", "#508d4e"),
-        ("median_word_length", "Median word length", "#9c6644"),
-        ("median_views", "Median views", "#7b2cbf"),
-        ("median_followers", "Median followers", "#d97706"),
-    ]
-
-    fig, axes = plt.subplots(2, 3, figsize=(12, 7))
-    axes = axes.flatten()
-    for i, (column, title, color) in enumerate(series):
-        ax = axes[i]
-        values = quartile_table[column].to_numpy(dtype=float)
-        ax.plot(x, values, marker="o", linewidth=2, color=color)
-        ax.set_xticks(x, labels, rotation=20)
-        ax.set_title(title)
-        ax.grid(axis="y", linestyle="--", alpha=0.3)
-        if column != "retweet_rate":
-            ax.ticklabel_format(style="plain", axis="y")
-    axes[-1].axis("off")
-    fig.suptitle("Outcome Patterns Across Author Attention Quartiles", fontsize=14)
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
-    fig.savefig(FIGURES_DIR / "attention_quartiles.png", dpi=220)
-    plt.close(fig)
-
-
-def create_coefficient_figure(model_summary: pd.DataFrame) -> None:
-    ordered = model_summary.iloc[::-1].copy()
-
-    fig, ax = plt.subplots(figsize=(9.4, 5.8))
-    y = np.arange(len(ordered))
-    x = ordered["attention_coef"].to_numpy(dtype=float)
-    xerr = np.vstack(
-        [
-            x - ordered["ci_low"].to_numpy(dtype=float),
-            ordered["ci_high"].to_numpy(dtype=float) - x,
-        ]
-    )
-
-    ax.errorbar(x, y, xerr=xerr, fmt="o", color="#1f2937", ecolor="#1f2937", capsize=4)
-    ax.axvline(0, color="#666666", linewidth=1)
-    ax.set_yticks(y, ordered["outcome"])
-    ax.set_xlabel("Coefficient for log(author's attention quantity)")
-    ax.set_title("Controlled OLS Estimates for Author Attention Quantity")
-    ax.grid(axis="x", linestyle="--", alpha=0.3)
+def create_frame_distribution_figure(table: pd.DataFrame) -> None:
+    fig, ax = plt.subplots(figsize=(8.8, 4.8))
+    bars = ax.bar(table["frame"], table["comments"], color="#9c6644", edgecolor="#1f2937")
+    ax.set_title("Break 50 Frame Distribution")
+    ax.set_ylabel("Number of comments")
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.set_axisbelow(True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
-    for idx, row in ordered.reset_index(drop=True).iterrows():
-        ax.text(
-            row["ci_high"] + 0.02,
-            idx,
-            f"p={row['p_value']:.3f}" if row["p_value"] >= 0.001 else "p<0.001",
-            va="center",
-            fontsize=9,
-        )
-
+    ax.tick_params(axis="x", rotation=20)
+    for bar, value, share in zip(bars, table["comments"], table["share"]):
+        ax.text(bar.get_x() + bar.get_width() / 2, value + 8, f"{value}\n{share:.1%}", ha="center", va="bottom", fontsize=9)
     fig.tight_layout()
-    fig.savefig(FIGURES_DIR / "attention_coefficients.png", dpi=220)
+    fig.savefig(FIGURES_DIR / "frame_distribution.png", dpi=220)
     plt.close(fig)
 
 
-def build_report(
+def create_engagement_by_stance_figure(table: pd.DataFrame) -> None:
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.8))
+    left = table.copy()
+
+    axes[0].barh(left["stance"], left["likes_median"], color="#508d4e", edgecolor="#1f2937")
+    axes[0].set_title("Median Likes by Stance")
+    axes[0].set_xlabel("Median likes")
+    axes[0].grid(axis="x", linestyle="--", alpha=0.3)
+    axes[0].set_axisbelow(True)
+
+    axes[1].barh(left["stance"], left["views_median"], color="#7b2cbf", edgecolor="#1f2937")
+    axes[1].set_title("Median Comment Views by Stance")
+    axes[1].set_xlabel("Median views")
+    axes[1].grid(axis="x", linestyle="--", alpha=0.3)
+    axes[1].set_axisbelow(True)
+
+    for ax in axes:
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "engagement_by_stance.png", dpi=220)
+    plt.close(fig)
+
+
+def create_top_decile_figure(table: pd.DataFrame) -> None:
+    fig, ax = plt.subplots(figsize=(10, 5.2))
+    x = np.arange(3)
+    labels = ["Overall", "Top likes decile", "Top views decile"]
+    bottoms = np.zeros(3)
+    colors = {
+        "Trump-referential/unclear": "#4c78a8",
+        "pro-Trump/supportive": "#59a14f",
+        "anti-Trump/oppositional": "#e15759",
+        "depoliticizing/bridge": "#b07aa1",
+        "sport-centered": "#f28e2b",
+        "other/unclear": "#9d9da1",
+    }
+
+    for _, row in table.iterrows():
+        values = np.array([row["overall_share"], row["top_likes_share"], row["top_views_share"]])
+        ax.bar(x, values, bottom=bottoms, color=colors[row["stance"]], label=row["stance"])
+        bottoms += values
+
+    ax.set_xticks(x, labels)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Share of comments")
+    ax.set_title("Stance Composition of Overall vs High-Engagement Comments")
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False)
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+    ax.set_axisbelow(True)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    fig.savefig(FIGURES_DIR / "top_decile_stance_shares.png", dpi=220)
+    plt.close(fig)
+
+
+def build_analysis_report(
     data_path: Path,
     df: pd.DataFrame,
-    sample_overview: pd.DataFrame,
-    descriptive_stats: pd.DataFrame,
-    correlation_table: pd.DataFrame,
+    sample_table: pd.DataFrame,
+    stance_table: pd.DataFrame,
+    frame_table: pd.DataFrame,
+    stance_engagement: pd.DataFrame,
+    top_decile_table: pd.DataFrame,
     model_summary: pd.DataFrame,
-    quartile_table: pd.DataFrame,
 ) -> None:
-    date_start = df["date"].min().strftime("%B %d, %Y")
-    date_end = df["date"].max().strftime("%B %d, %Y")
-    english_share = df["english"].mean()
-    zero_retweet_share = (df["retweets count"] == 0).mean()
-
-    strongest = correlation_table.sort_values("spearman_rho", ascending=False).iloc[0]
-    weakest = correlation_table.sort_values("spearman_rho").iloc[0]
-    likes_row = model_summary.loc[model_summary["outcome"] == "Likes (log1p)"].iloc[0]
-    views_row = model_summary.loc[model_summary["outcome"] == "Comment views (log1p)"].iloc[0]
-    followers_row = model_summary.loc[model_summary["outcome"] == "Followers (log1p)"].iloc[0]
-    word_row = model_summary.loc[model_summary["outcome"] == "Comment word length"].iloc[0]
-    retweet_row = model_summary.loc[
-        model_summary["outcome"] == "Retweets count (log1p exploratory model)"
+    pro_count = int(stance_table.loc[stance_table["stance"] == "pro-Trump/supportive", "comments"].iloc[0])
+    anti_count = int(stance_table.loc[stance_table["stance"] == "anti-Trump/oppositional", "comments"].iloc[0])
+    bridge_count = int(stance_table.loc[stance_table["stance"] == "depoliticizing/bridge", "comments"].iloc[0])
+    political_share = float(frame_table.loc[frame_table["frame"] == "political", "share"].iloc[0])
+    blended_share = float(frame_table.loc[frame_table["frame"] == "blended sport-politics", "share"].iloc[0])
+    sport_views = float(
+        stance_engagement.loc[stance_engagement["stance"] == "sport-centered", "views_median"].iloc[0]
+    )
+    pro_likes = float(
+        stance_engagement.loc[stance_engagement["stance"] == "pro-Trump/supportive", "likes_median"].iloc[0]
+    )
+    anti_views = float(
+        stance_engagement.loc[stance_engagement["stance"] == "anti-Trump/oppositional", "views_median"].iloc[0]
+    )
+    top_likes_pro = float(top_decile_table.loc[top_decile_table["stance"] == "pro-Trump/supportive", "top_likes_share"].iloc[0])
+    top_likes_anti = float(top_decile_table.loc[top_decile_table["stance"] == "anti-Trump/oppositional", "top_likes_share"].iloc[0])
+    like_attention_row = model_summary[
+        (model_summary["outcome"] == "Likes (log1p)")
+        & (model_summary["comparison_to_reference"] == "log_attention control effect")
+    ].iloc[0]
+    views_attention_row = model_summary[
+        (model_summary["outcome"] == "Comment views (log1p)")
+        & (model_summary["comparison_to_reference"] == "log_attention control effect")
     ].iloc[0]
 
     report = f"""# Break 50 Analysis Report
 
 ## Overview
 
-This report provides a repo-ready analysis output for the Break 50 project described in [`P3_plan.md`](./P3_plan.md). The analysis uses the local file `B50_X_COMMENT.xlsx` but does not copy the raw dataset into the repository, in keeping with the course instruction not to upload Excel or CSV data files to GitHub.
+This revised analysis responds to the instructor feedback by shifting the project from a generic engagement-correlation study to a **P3-style contested-discourse analysis**. Instead of treating all outcomes as interchangeable engagement measures, the report asks how commenters frame Trump's appearance in Break 50, how stance positions are distributed, and which kinds of comments receive more visible reaction.
 
-The project asks how **author's attention quantity** is related to five dependent variables:
+The raw Excel file remains local and outside version control. Data source used locally: `{data_path}`
 
-- `retweets count`
-- `likes`
-- `Comment word length`
-- `Comment views`
-- `followers`
+## Revised Research Question
 
-## Data And Sample
+The revised study asks:
 
-The working dataset contains **{len(df):,} comments** collected from **{date_start}** to **{date_end}**. The sample spans **{df["Blog ID"].nunique()} source posts**, **{df["username"].nunique():,} unique usernames**, and **{df["contentsid"].nunique():,} unique comment IDs**. About **{english_share:.1%}** of the comments are coded as English-language, and **{zero_retweet_share:.1%}** of the comments have zero retweets, which is why retweets are treated cautiously in the analysis.
+1. How is Trump's appearance in Break 50 framed in the comments: as politics, as sport, or as a blending of the two?
+2. How are stance positions distributed across the discussion, specifically pro-Trump/supportive, anti-Trump/oppositional, depoliticizing/bridge, Trump-referential/unclear, sport-centered, and other/unclear comments?
+3. Do visible reaction metrics such as likes and comment views cluster differently across those stance positions?
 
-Data source used locally: `{data_path}`
+In this revised design, **author's attention quantity** is retained as a secondary control variable rather than the main research question.
 
-### Sample Overview
+## Coding Strategy
 
-{df_to_markdown(sample_overview, index=False)}
+Because the dataset does not include pre-coded discourse variables, the pipeline applies a transparent keyword-based coding scheme to approximate stance and frame. The coding rules are documented in `docs/codebook.md`.
 
-### Descriptive Statistics
+- `pro-Trump/supportive`: comments using supportive or celebratory language toward Trump or his appearance.
+- `anti-Trump/oppositional`: comments using condemnation, moral critique, or rejection language.
+- `depoliticizing/bridge`: comments explicitly calling for politics to be set aside in favor of golf or shared enjoyment.
+- `Trump-referential/unclear`: comments that mention Trump but do not clearly resolve into support or opposition under the heuristic rules.
+- `sport-centered`: comments focused on golf performance without a clear political signal.
+- `other/unclear`: comments that do not fit the categories above.
 
-{df_to_markdown(descriptive_stats)}
+The frame coding distinguishes `political`, `blended sport-politics`, `sport`, `depoliticizing bridge`, and `other`.
 
-## Analysis Strategy
+## Sample Overview
 
-The analysis follows the project plan and uses three layers of evidence:
+{df_to_markdown(sample_table, index=False)}
 
-1. Descriptive statistics for the independent variable, dependent variables, and control variables.
-2. Bivariate correlations between author's attention quantity and each dependent variable.
-3. Controlled OLS models using `log(1 + author's attention quantity)` as the focal predictor and the following controls: verified status, English-language indicator, `log(1 + number of media outlets)`, and `log(1 + number of author posts)`.
+## Stance And Frame Distribution
 
-For `likes`, `Comment views`, and `followers`, the outcome is also log-transformed with `log(1 + y)`. `Comment word length` is kept on its original scale. `retweets count` is modeled with `log(1 + retweets)` as an exploratory approximation only; because retweets are highly zero-inflated, a negative binomial or hurdle model would be preferable in the final paper if additional packages are available.
+The coded distribution shows a conversation saturated with political reference, but not one dominated by explicit ideological declaration. The largest category is **Trump-referential/unclear** (`{int(stance_table.iloc[0]["comments"]):,}` comments), followed by **other/unclear**. Explicit **pro-Trump/supportive** comments (`{pro_count}`) substantially outnumber explicit **anti-Trump/oppositional** comments (`{anti_count}`), while overt **depoliticizing/bridge** comments are rare (`{bridge_count}`).
 
-## Bivariate Results
+On the frame side, **{political_share:.1%}** of comments fall into a political frame and another **{blended_share:.1%}** into a blended sport-politics frame, which indicates that Trump's presence is not being discussed as a purely athletic event.
 
-The strongest raw association is between author's attention quantity and **{strongest["dependent_variable"]}** (`Spearman rho = {strongest["spearman_rho"]:.3f}`). The weakest relationship is **{weakest["dependent_variable"]}** (`Spearman rho = {weakest["spearman_rho"]:.3f}`).
+### Stance Distribution
 
-### Correlation Table
+{df_to_markdown(stance_table, index=False)}
 
-{df_to_markdown(correlation_table, index=False)}
+![Stance distribution](../outputs/figures/stance_distribution.png)
 
-![Correlation plot](../outputs/figures/attention_correlations.png)
+### Frame Distribution
 
-## Controlled Model Results
+{df_to_markdown(frame_table, index=False)}
 
-The controlled models show a consistent pattern:
+![Frame distribution](../outputs/figures/frame_distribution.png)
 
-- Higher author's attention quantity is associated with more likes (`b = {likes_row["attention_coef"]:.3f}`, `p {"<0.001" if likes_row["p_value"] < 0.001 else f"= {likes_row['p_value']:.3f}"}`).
-- Higher author's attention quantity is associated with more comment views (`b = {views_row["attention_coef"]:.3f}`, `p {"<0.001" if views_row["p_value"] < 0.001 else f"= {views_row['p_value']:.3f}"}`).
-- The strongest positive relationship is with followers (`b = {followers_row["attention_coef"]:.3f}`, `p {"<0.001" if followers_row["p_value"] < 0.001 else f"= {followers_row['p_value']:.3f}"}`).
-- Comment word length is modestly negative (`b = {word_row["attention_coef"]:.3f}`, `p {"<0.001" if word_row["p_value"] < 0.001 else f"= {word_row['p_value']:.3f}"}`), suggesting that higher-attention authors do not necessarily write longer comments.
-- The retweet model is weak and not statistically reliable in this specification (`b = {retweet_row["attention_coef"]:.3f}`, `p {"<0.001" if retweet_row["p_value"] < 0.001 else f"= {retweet_row['p_value']:.3f}"}`).
+## Engagement Across Stance Positions
 
-### Model Summary
+The grouped engagement table suggests that the discussion is not symmetrical across stance positions.
+
+- `sport-centered` comments have the highest median comment views (`{sport_views:.1f}`), which suggests that purely golf-centered comments can still travel widely.
+- `pro-Trump/supportive` comments have a median of `{pro_likes:.1f}` likes, higher than the median for explicitly anti-Trump comments.
+- `anti-Trump/oppositional` comments have low visibility in median terms (`{anti_views:.1f}` median views), even though some individual anti comments still attract attention.
+
+### Engagement By Stance
+
+{df_to_markdown(stance_engagement, index=False)}
+
+![Engagement by stance](../outputs/figures/engagement_by_stance.png)
+
+## High-Engagement Comment Composition
+
+The top-decile comparison shows how stance categories are represented among the most visible comments. Explicitly supportive comments make up **{top_likes_pro:.1%}** of the top-like decile, compared with **{top_likes_anti:.1%}** for explicitly oppositional comments. The top-decile comments are still dominated by the broad `Trump-referential/unclear` category, which suggests that much of the conversation's visible interaction sits in a politically charged but not always explicitly resolved middle zone.
+
+{df_to_markdown(top_decile_table, index=False)}
+
+![Top-decile stance shares](../outputs/figures/top_decile_stance_shares.png)
+
+## Controlled Checks
+
+To preserve continuity with the earlier pipeline, the script still runs simple controlled models for `log(1 + likes)` and `log(1 + Comment views)`. In these models, the stance categories are compared against the `Trump-referential/unclear` reference group while controlling for author's attention quantity, verification status, language, media outlets, and author posting volume.
+
+The most consistent controlled result is that **author's attention quantity remains a strong predictor of visible reaction**, even after the discourse pivot:
+
+- For likes: `b = {like_attention_row["coef"]:.3f}`, `p {"<0.001" if like_attention_row["p_value"] < 0.001 else f"= {like_attention_row['p_value']:.3f}"}`.
+- For comment views: `b = {views_attention_row["coef"]:.3f}`, `p {"<0.001" if views_attention_row["p_value"] < 0.001 else f"= {views_attention_row['p_value']:.3f}"}`.
+
+However, the explicit stance coefficients are less stable, largely because the anti-Trump and depoliticizing categories are comparatively small. That makes the current stance modeling useful as an exploratory supplement rather than as the final causal claim.
+
+### Controlled Model Summary
 
 {df_to_markdown(model_summary, index=False)}
 
-![Coefficient plot](../outputs/figures/attention_coefficients.png)
-
-## Quartile Check
-
-To make the pattern easier to interpret substantively, the comments were also grouped into four quartiles of author's attention quantity. The quartile summary shows that the highest-attention quartile has notably higher median views and median followers than the lower quartiles, while the retweet pattern is much noisier.
-
-### Quartile Summary
-
-{df_to_markdown(quartile_table, index=False)}
-
-![Quartile plot](../outputs/figures/attention_quartiles.png)
-
 ## Interpretation
 
-Overall, the findings support the central claim of the project plan: **author's attention quantity is positively associated with visibility-oriented and reach-oriented outcomes**, especially followers, comment views, and likes. The relationship with retweets is much weaker, and the relationship with comment word length is slightly negative. In practical terms, this means that authors with higher attention quantity appear to occupy more advantaged audience positions and receive more visible engagement, but they do not necessarily produce longer comments or more shareable comments.
+This revised analysis better fits the P3 prompt because it treats the Break 50 comments as **instances of contested discourse**, not just as engagement datapoints. The main substantive finding is that the comment space is strongly politicized: many comments reference Trump directly, and a large share of the conversation frames the event politically or as a blend of politics and golf. At the same time, relatively few comments use explicit depoliticizing language, which suggests that the conversation rarely escapes the politics-sport overlap even when commenters want it to.
+
+The analysis also shows that supportive, oppositional, and depoliticizing comments do not receive identical reaction patterns. The visible conversation is not purely anti or purely pro; rather, it is dominated by a large referential middle category in which commenters engage Trump as a presence, symbol, or controversy without always taking a sharply coded stance.
 
 ## Limitations
 
-- The analysis uses one Break 50 dataset collected over a short time window, so external validity is limited.
-- The data are observational, so the models identify association rather than causation.
-- Retweets are highly zero-inflated, so the retweet model should be treated as exploratory.
-- The classical count-model approach proposed in the plan was approximated here with available local packages; the final project can strengthen this step by switching to a negative binomial or hurdle model if `statsmodels` becomes available.
+- The discourse coding is heuristic and dictionary-based rather than hand-coded.
+- Some comments are duplicated or formulaic, which can inflate visible categories.
+- The `Trump-referential/unclear` category is intentionally broad, so it captures ambiguity at the cost of precision.
+- Because the anti-Trump and depoliticizing categories are small, controlled stance estimates should be interpreted cautiously.
 
 ## Reproduction
-
-From the repository root, run:
 
 ```powershell
 $env:BREAK50_DATA_PATH=\"{data_path}\"
 py -X utf8 scripts/run_analysis.py
 ```
-
-Generated outputs:
-
-- [`../outputs/figures/attention_correlations.png`](../outputs/figures/attention_correlations.png)
-- [`../outputs/figures/attention_coefficients.png`](../outputs/figures/attention_coefficients.png)
-- [`../outputs/figures/attention_quartiles.png`](../outputs/figures/attention_quartiles.png)
-- [`../outputs/tables/sample_overview.md`](../outputs/tables/sample_overview.md)
-- [`../outputs/tables/descriptive_stats.md`](../outputs/tables/descriptive_stats.md)
-- [`../outputs/tables/correlations.md`](../outputs/tables/correlations.md)
-- [`../outputs/tables/model_summary.md`](../outputs/tables/model_summary.md)
-- [`../outputs/tables/model_details.md`](../outputs/tables/model_details.md)
-- [`../outputs/tables/quartile_summary.md`](../outputs/tables/quartile_summary.md)
 """
     (DOCS_DIR / "analysis_report.md").write_text(report, encoding="utf-8")
 
 
-def write_json_summary(
+def write_summary_json(
     data_path: Path,
     df: pd.DataFrame,
-    correlation_table: pd.DataFrame,
-    model_summary: pd.DataFrame,
+    stance_table: pd.DataFrame,
+    frame_table: pd.DataFrame,
+    engagement_table: pd.DataFrame,
 ) -> None:
     payload = {
         "data_path": str(data_path),
         "n_comments": int(len(df)),
-        "date_start": df["date"].min().strftime("%Y-%m-%d %H:%M:%S"),
-        "date_end": df["date"].max().strftime("%Y-%m-%d %H:%M:%S"),
-        "strongest_spearman_outcome": correlation_table.sort_values("spearman_rho", ascending=False)
-        .iloc[0]["dependent_variable"],
-        "model_summary": model_summary.to_dict(orient="records"),
+        "stance_distribution": stance_table.to_dict(orient="records"),
+        "frame_distribution": frame_table.to_dict(orient="records"),
+        "engagement_by_stance": engagement_table.to_dict(orient="records"),
     }
     (TABLES_DIR / "analysis_summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
@@ -546,32 +748,40 @@ def main() -> None:
     data_path = resolve_data_path()
     df = load_and_prepare(data_path)
 
-    sample_overview, descriptive_stats = descriptive_outputs(df)
-    correlation_table = correlation_output(df)
-    model_details, model_summary = regression_outputs(df)
-    quartile_table = quartile_output(df)
+    sample_table = sample_overview(df)
+    stats_table = descriptive_stats(df)
+    stance_table = stance_distribution(df)
+    frame_table = frame_distribution(df)
+    stance_engagement = engagement_by_stance(df)
+    frame_engagement = engagement_by_frame(df)
+    top_decile_table = top_decile_shares(df)
+    model_details, model_summary = discourse_model_summary(df)
 
-    write_markdown_table(sample_overview, TABLES_DIR / "sample_overview.md", index=False)
-    write_markdown_table(descriptive_stats, TABLES_DIR / "descriptive_stats.md", index=True)
-    write_markdown_table(correlation_table, TABLES_DIR / "correlations.md", index=False)
-    write_markdown_table(model_summary, TABLES_DIR / "model_summary.md", index=False)
-    write_markdown_table(model_details, TABLES_DIR / "model_details.md", index=False)
-    write_markdown_table(quartile_table, TABLES_DIR / "quartile_summary.md", index=False)
+    write_markdown_table(sample_table, TABLES_DIR / "sample_overview.md", index=False)
+    write_markdown_table(stats_table, TABLES_DIR / "descriptive_stats.md", index=True)
+    write_markdown_table(stance_table, TABLES_DIR / "stance_distribution.md", index=False)
+    write_markdown_table(frame_table, TABLES_DIR / "frame_distribution.md", index=False)
+    write_markdown_table(stance_engagement, TABLES_DIR / "engagement_by_stance.md", index=False)
+    write_markdown_table(frame_engagement, TABLES_DIR / "engagement_by_frame.md", index=False)
+    write_markdown_table(top_decile_table, TABLES_DIR / "top_decile_stance.md", index=False)
+    write_markdown_table(model_details, TABLES_DIR / "discourse_model_details.md", index=False)
+    write_markdown_table(model_summary, TABLES_DIR / "discourse_model_summary.md", index=False)
 
-    create_correlation_figure(correlation_table)
-    create_quartile_figure(quartile_table)
-    create_coefficient_figure(model_summary)
-    build_report(
+    create_stance_distribution_figure(stance_table)
+    create_frame_distribution_figure(frame_table)
+    create_engagement_by_stance_figure(stance_engagement)
+    create_top_decile_figure(top_decile_table)
+    build_analysis_report(
         data_path,
         df,
-        sample_overview,
-        descriptive_stats,
-        correlation_table,
+        sample_table,
+        stance_table,
+        frame_table,
+        stance_engagement,
+        top_decile_table,
         model_summary,
-        quartile_table,
     )
-    write_json_summary(data_path, df, correlation_table, model_summary)
-
+    write_summary_json(data_path, df, stance_table, frame_table, stance_engagement)
     print(f"Analysis complete. Report written to: {DOCS_DIR / 'analysis_report.md'}")
 
 

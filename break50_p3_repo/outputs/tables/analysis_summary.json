@@ -1,64 +1,125 @@
 {
   "data_path": "C:\\Users\\Larry.Nie\\Downloads\\B50_X_COMMENT.xlsx",
   "n_comments": 1008,
-  "date_start": "2024-07-23 02:02:13",
-  "date_end": "2024-08-01 02:43:46",
-  "strongest_spearman_outcome": "followers",
-  "model_summary": [
+  "stance_distribution": [
     {
-      "outcome": "Retweets count (log1p exploratory model)",
-      "attention_coef": 0.011635313564460681,
-      "robust_se": 0.012536045999081155,
-      "ci_low": -0.012935336593738384,
-      "ci_high": 0.036205963722659745,
-      "p_value": 0.35333049168565306,
-      "sig": "",
-      "r2": 0.025096322883831346,
-      "n": 1008
+      "stance": "Trump-referential/unclear",
+      "comments": 623,
+      "share": 0.6180555555555556
     },
     {
-      "outcome": "Likes (log1p)",
-      "attention_coef": 0.13391487635258414,
-      "robust_se": 0.041536175487938636,
-      "ci_low": 0.052503972396224424,
-      "ci_high": 0.21532578030894386,
-      "p_value": 0.001263895253423284,
-      "sig": "**",
-      "r2": 0.08171190036870479,
-      "n": 1008
+      "stance": "pro-Trump/supportive",
+      "comments": 108,
+      "share": 0.10714285714285714
     },
     {
-      "outcome": "Comment word length",
-      "attention_coef": -0.625696003691381,
-      "robust_se": 0.29876449399852595,
-      "ci_low": -1.2112744119284917,
-      "ci_high": -0.04011759545427018,
-      "p_value": 0.03623519411828472,
-      "sig": "*",
-      "r2": 0.09558923879334802,
-      "n": 1008
+      "stance": "anti-Trump/oppositional",
+      "comments": 30,
+      "share": 0.02976190476190476
     },
     {
-      "outcome": "Comment views (log1p)",
-      "attention_coef": 0.23143985419678614,
-      "robust_se": 0.06261718422598088,
-      "ci_low": 0.10871017311386362,
-      "ci_high": 0.3541695352797087,
-      "p_value": 0.00021893016420128323,
-      "sig": "***",
-      "r2": 0.11468505083785185,
-      "n": 1008
+      "stance": "depoliticizing/bridge",
+      "comments": 9,
+      "share": 0.008928571428571428
     },
     {
-      "outcome": "Followers (log1p)",
-      "attention_coef": 0.4517669920355125,
-      "robust_se": 0.032458086853918044,
-      "ci_low": 0.38814914180183313,
-      "ci_high": 0.5153848422691919,
-      "p_value": 4.892479655682663e-44,
-      "sig": "***",
-      "r2": 0.601170721250482,
-      "n": 1008
+      "stance": "sport-centered",
+      "comments": 41,
+      "share": 0.040674603174603176
+    },
+    {
+      "stance": "other/unclear",
+      "comments": 197,
+      "share": 0.19543650793650794
+    }
+  ],
+  "frame_distribution": [
+    {
+      "frame": "political",
+      "comments": 504,
+      "share": 0.5
+    },
+    {
+      "frame": "blended sport-politics",
+      "comments": 258,
+      "share": 0.25595238095238093
+    },
+    {
+      "frame": "sport",
+      "comments": 41,
+      "share": 0.040674603174603176
+    },
+    {
+      "frame": "depoliticizing bridge",
+      "comments": 9,
+      "share": 0.008928571428571428
+    },
+    {
+      "frame": "other",
+      "comments": 196,
+      "share": 0.19444444444444445
+    }
+  ],
+  "engagement_by_stance": [
+    {
+      "stance": "Trump-referential/unclear",
+      "comments": 623,
+      "likes_mean": 37.881219903691814,
+      "likes_median": 1.0,
+      "views_mean": 7809.786516853933,
+      "views_median": 210.0,
+      "retweet_rate": 0.09791332263242375,
+      "attention_median": 606.0
+    },
+    {
+      "stance": "pro-Trump/supportive",
+      "comments": 108,
+      "likes_mean": 36.601851851851855,
+      "likes_median": 2.0,
+      "views_mean": 7684.0462962962965,
+      "views_median": 234.0,
+      "retweet_rate": 0.1111111111111111,
+      "attention_median": 565.0
+    },
+    {
+      "stance": "anti-Trump/oppositional",
+      "comments": 30,
+      "likes_mean": 10.4,
+      "likes_median": 1.0,
+      "views_mean": 4659.666666666667,
+      "views_median": 82.0,
+      "retweet_rate": 0.2,
+      "attention_median": 346.0
+    },
+    {
+      "stance": "depoliticizing/bridge",
+      "comments": 9,
+      "likes_mean": 17.555555555555557,
+      "likes_median": 1.0,
+      "views_mean": 1691.6666666666667,
+      "views_median": 90.0,
+      "retweet_rate": 0.2222222222222222,
+      "attention_median": 597.0
+    },
+    {
+      "stance": "sport-centered",
+      "comments": 41,
+      "likes_mean": 42.63414634146341,
+      "likes_median": 2.0,
+      "views_mean": 10931.292682926829,
+      "views_median": 915.0,
+      "retweet_rate": 0.12195121951219512,
+      "attention_median": 641.0
+    },
+    {
+      "stance": "other/unclear",
+      "comments": 197,
+      "likes_mean": 16.03553299492386,
+      "likes_median": 2.0,
+      "views_mean": 3601.5786802030457,
+      "views_median": 638.0,
+      "retweet_rate": 0.07106598984771574,
+      "attention_median": 694.0
     }
   ]
 }
